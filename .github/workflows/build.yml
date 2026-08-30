@@ -15,7 +15,7 @@ jobs:
           - name: sanitizers
             cmake_flags: -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure (${{ matrix.name }})
         run: cmake -B build ${{ matrix.cmake_flags }}
       - name: Build
