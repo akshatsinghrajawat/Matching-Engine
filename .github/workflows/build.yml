@@ -1,0 +1,24 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: release
+            cmake_flags: -DCMAKE_BUILD_TYPE=Release
+          - name: sanitizers
+            cmake_flags: -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure (${{ matrix.name }})
+        run: cmake -B build ${{ matrix.cmake_flags }}
+      - name: Build
+        run: cmake --build build
+      - name: Run
+        run: ./build/matching_engine
