@@ -1,13 +1,11 @@
-#include "order.hpp"
-
+#include "order_book.hpp"
 #include <iostream>
 
-// Placeholder entry point. No book, no matching yet -- this exists so
-// the scaffold compiles and CI has something to build against. Real
-// logic starts with the skeleton book (next commit).
 int main() {
-    Order sample(/*id=*/1, Side::Buy, /*price=*/10000, /*qty=*/5);
-    std::cout << "matching-engine scaffold OK, sample order id="
-              << sample.id << "\n";
+    OrderBook book;
+    Order sample(1, Side::Buy, 10000, 5);
+    std::cout << "scaffold OK, order id=" << sample.id
+              << ", bids=" << book.bids.size()
+              << " asks=" << book.asks.size() << "\n";
     return 0;
 }
