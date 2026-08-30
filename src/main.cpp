@@ -3,9 +3,10 @@
 
 int main() {
     OrderBook book;
-    Order sample(1, Side::Buy, 10000, 5);
-    std::cout << "scaffold OK, order id=" << sample.id
-              << ", bids=" << book.bids.size()
-              << " asks=" << book.asks.size() << "\n";
+    book.insert(Order(1, Side::Buy, 10000, 5));
+    book.insert(Order(2, Side::Buy, 10000, 3));
+    std::cout << "scaffold OK, bid levels=" << book.bids.size()
+              << ", resting qty at 10000=" << book.bids[10000].totalQty
+              << "\n";
     return 0;
 }

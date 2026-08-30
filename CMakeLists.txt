@@ -18,3 +18,4 @@ if(ENABLE_SANITIZERS)
 endif()
 
 add_executable(matching_engine src/main.cpp)
+add_executable(tests tests.cpp)
