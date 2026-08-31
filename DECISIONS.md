@@ -30,3 +30,16 @@ it means matching is fully deterministic given the same sequence of
 calls, which is what the tests and fuzzer actually need. If v2's
 sequencer needs a real sequence number later, that's for ordering
 across threads. Different problem, not a replacement for this.
+
+## Two lookup maps instead of one, for O(1) cancel
+
+Cancel now stores the map iterator itself (not just price), so erasing
+doesn't need to re-search the tree -- erase(iterator) on std::map is
+O(1) amortized, so cancel is O(1) amortized now, not O(log P).
+
+Bids and asks are different map types (different Compare), so their
+iterators are different types too. Could unify with std::variant, but
+that's a lot of machinery (visit, if constexpr) for something I'd
+rather keep readable -- two separate lookup maps (bidLookup,
+askLookup) with a small templated insert/cancel is simpler to read and
+just as fast.
