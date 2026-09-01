@@ -76,6 +76,23 @@ void bidsAndAsksAreOrderedTowardTheSpread() {
     check(book.asks.begin()->first == 108, "best ask is the lowest price");
 }
 
+void cancelFindsCorrectOrderAcrossMultipleLevelsAndSides() {
+    OrderBook book;
+    book.insert(Order(1, Side::Buy, 100, 10));
+    book.insert(Order(2, Side::Buy, 105, 8));
+    book.insert(Order(3, Side::Sell, 110, 6));
+    book.insert(Order(4, Side::Sell, 108, 4));
+
+    bool cancelled = book.cancel(3);
+    check(cancelled, "cancel succeeds for an order buried in a different level/side");
+    check(book.asks.count(110) == 0, "level 110 is gone since it only had order #3");
+    check(book.asks.count(108) == 1, "level 108 untouched");
+    check(book.bids.count(100) == 1, "bids untouched by cancelling an ask");
+    check(book.bids.count(105) == 1, "bids untouched by cancelling an ask");
+
+    check(!book.cancel(3), "cancelling the same id twice returns false the second time");
+}
+
 int main() {
     insertPutsOrderInRightLevel();
     fifoOrderPreservedOnInsert();
@@ -84,6 +101,7 @@ int main() {
     cancelMiddleOrderPreservesFifoForTheRest();
     cancelUnknownIdReturnsFalse();
     bidsAndAsksAreOrderedTowardTheSpread();
+    cancelFindsCorrectOrderAcrossMultipleLevelsAndSides();
 
     if (failures == 0) {
         std::cout << "All tests passed.\n";

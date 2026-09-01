@@ -5,7 +5,6 @@
 #include <list>
 #include <map>
 #include <unordered_map>
-#include <utility>
 
 struct PriceLevel {
     std::list<Order> orders;
@@ -18,47 +17,47 @@ public:
     std::map<Price, PriceLevel, std::less<Price>> asks;
 
     void insert(const Order& order) {
-        if (order.side == Side::Buy) {
-            insertInto(bids, bidLookup, order);
-        } else {
-            insertInto(asks, askLookup, order);
-        }
+        bool isBuy = (order.side == Side::Buy);
+        PriceLevel& level = isBuy ? bids[order.price] : asks[order.price];
+        level.orders.push_back(order);
+        auto it = std::prev(level.orders.end());
+        level.totalQty += order.remainingQty;
+        locations_[order.id] = Location{order.side, order.price, it};
     }
 
-    // O(1) amortized: the lookup gives us the map iterator directly,
-    // no re-searching the tree.
+    // O(1) lookup via locations_, replacing the old linear scan.
     bool cancel(OrderId id) {
-        return cancelFrom(bids, bidLookup, id) || cancelFrom(asks, askLookup, id);
+        auto locIt = locations_.find(id);
+        if (locIt == locations_.end()) {
+            return false;
+        }
+        const Location& loc = locIt->second;
+        if (loc.side == Side::Buy) {
+            cancelAt(bids, loc.price, loc.it);
+        } else {
+            cancelAt(asks, loc.price, loc.it);
+        }
+        locations_.erase(locIt);
+        return true;
     }
 
 private:
-    using BidLevels = std::map<Price, PriceLevel, std::greater<Price>>;
-    using AskLevels = std::map<Price, PriceLevel, std::less<Price>>;
-    using OrderIt = std::list<Order>::iterator;
+    struct Location {
+        Side side;
+        Price price;
+        std::list<Order>::iterator it;
+    };
 
-    std::unordered_map<OrderId, std::pair<BidLevels::iterator, OrderIt>> bidLookup;
-    std::unordered_map<OrderId, std::pair<AskLevels::iterator, OrderIt>> askLookup;
+    std::unordered_map<OrderId, Location> locations_;
 
-    template <typename Levels, typename Lookup>
-    void insertInto(Levels& levels, Lookup& lookup, const Order& order) {
-        auto levelIt = levels.try_emplace(order.price).first;
-        levelIt->second.orders.push_back(order);
-        levelIt->second.totalQty += order.remainingQty;
-        lookup[order.id] = {levelIt, std::prev(levelIt->second.orders.end())};
-    }
-
-    template <typename Levels, typename Lookup>
-    bool cancelFrom(Levels& levels, Lookup& lookup, OrderId id) {
-        auto found = lookup.find(id);
-        if (found == lookup.end()) return false;
-        auto [levelIt, orderIt] = found->second;
+    template <typename BookSide>
+    void cancelAt(BookSide& side, Price price, std::list<Order>::iterator orderIt) {
+        auto levelIt = side.find(price);
         PriceLevel& level = levelIt->second;
         level.totalQty -= orderIt->remainingQty;
         level.orders.erase(orderIt);
         if (level.orders.empty()) {
-            levels.erase(levelIt);
+            side.erase(levelIt);
         }
-        lookup.erase(found);
-        return true;
     }
 };
