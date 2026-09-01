@@ -43,16 +43,3 @@ that's a lot of machinery (visit, if constexpr) for something I'd
 rather keep readable -- two separate lookup maps (bidLookup,
 askLookup) with a small templated insert/cancel is simpler to read and
 just as fast.
-
-## Cancel needs O(1) lookup, not a scan
-
-insert/cancel started with a linear scan across both sides to find an
-order by id -- fine for tests, wrong for anything real. Added an
-unordered_map<OrderId, Location> (side + price + list iterator) that
-insert populates and cancel erases. list iterators stay valid when
-other elements are erased, so the map can hold them directly as long
-as the map entry is cleaned up in the same call that erases from the
-list.
-
-match() will need the same lookup once fills start touching resting
-orders by id, so this had to happen before matching logic, not after.
